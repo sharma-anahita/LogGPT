@@ -9,5 +9,14 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.15.0",
+    "kafkajs": "^2.2.4",
+    "pg": "^8.20.0"
   }
 }
