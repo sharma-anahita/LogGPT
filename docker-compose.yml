@@ -1,115 +1,20 @@
 services:
-  backend:
-    build:
-      context: ./backend
-    container_name: loggpt-backend
-    depends_on:
-      - postgres
-      - redis
-      - kafka
-    environment:
-      PORT: 3000
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: loggpt
-      POSTGRES_USER: loggpt
-      POSTGRES_PASSWORD: loggpt
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KAFKA_BROKER: kafka:9092
-    ports:
-      - "3000:3000"
-    networks:
-      - loggpt-net
-
-  worker:
-    build:
-      context: ./worker
-    container_name: loggpt-worker
-    depends_on:
-      - postgres
-      - redis
-      - kafka
-      - ml-service
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: loggpt
-      POSTGRES_USER: loggpt
-      POSTGRES_PASSWORD: loggpt
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KAFKA_BROKER: kafka:9092
-      ML_SERVICE_URL: http://ml-service:8000
-    networks:
-      - loggpt-net
-
-  ml-service:
-    build:
-      context: ./ml-service
-    container_name: loggpt-ml-service
-    ports:
-      - "8000:8000"
-    networks:
-      - loggpt-net
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: loggpt-postgres
-    environment:
-      POSTGRES_DB: loggpt
-      POSTGRES_USER: loggpt
-      POSTGRES_PASSWORD: loggpt
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - loggpt-net
-
-  redis:
-    image: redis:7-alpine
-    container_name: loggpt-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - loggpt-net
-
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.1
-    container_name: loggpt-zookeeper
+    image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
-    networks:
-      - loggpt-net
 
   kafka:
-    image: confluentinc/cp-kafka:7.6.1
-    container_name: loggpt-kafka
+    image: confluentinc/cp-kafka:7.5.0
     depends_on:
       - zookeeper
+    ports:
+      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-    ports:
-      - "9092:9092"
-    networks:
-      - loggpt-net
-
-networks:
-  loggpt-net:
-    driver: bridge
-
-volumes:
-  postgres-data:
-  redis-data:
