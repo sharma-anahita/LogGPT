@@ -20,10 +20,11 @@ const startConsumer = async () => {
       eachMessage: async ({ topic, partition, message }) => {
         try {
           const logs = JSON.parse(message.value.toString());
-          console.log("[KAFKA] Received message:", logs);
+          const sessionId = logs.sessionId ? `session ${logs.sessionId}` : "no session";
+          console.log(`[KAFKA] Received message from ${sessionId}:`, logs.message);
           
           await saveLog(logs);
-          console.log("[DB] ✓ Log saved to database:", logs.message);
+          console.log("[DB] ✓ Log saved to database");
         } catch (error) {
           console.error("[ERROR] Processing log message:", error.message);
         }

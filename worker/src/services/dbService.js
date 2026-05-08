@@ -21,12 +21,13 @@ pool.on("error", (err) => {
 const saveLog = async (log) => {
   try {
     const query = `
-      INSERT INTO logs (timestamp, level, service, message, raw)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO logs (session_id, timestamp, level, service, message, raw)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id
     `;
 
     const values = [
+      log.sessionId || null,
       log.timestamp,
       log.level,
       log.service,
@@ -43,4 +44,32 @@ const saveLog = async (log) => {
   }
 };
 
-module.exports = { saveLog };
+// Save anomaly
+const saveAnomaly = async (sessionId, anomaly) => {
+  try {
+    const query = `
+      INSERT INTO anomalies (session_id, type, severity, start_time, end_time, description, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
+    `;
+
+    const values = [
+      sessionId,
+      anomaly.type,
+      anomaly.severity,
+      anomaly.startTime,
+      anomaly.endTime,
+      anomaly.description,
+      JSON.stringify(anomaly.metadata || {}),
+    ];
+
+    const result = await pool.query(query, values);
+    console.log("[DB] Inserted anomaly with ID:", result.rows[0].id);
+    return result.rows[0];
+  } catch (error) {
+    console.error("[ERROR] Anomaly insert failed:", error.message);
+    throw error;
+  }
+};
+
+module.exports = { saveLog, saveAnomaly };

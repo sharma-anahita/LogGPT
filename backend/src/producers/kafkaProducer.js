@@ -33,7 +33,7 @@ const sendLogsToKafka = async (logs) => {
       messages,
     });
 
-    console.log(`Sent ${logs.length} logs to Kafka`);
+    console.log(`[Kafka] Sent ${logs.length} logs to topic 'logs-topic'`);
   } catch (error) {
     console.error("Kafka Producer Error:", error);
   }
