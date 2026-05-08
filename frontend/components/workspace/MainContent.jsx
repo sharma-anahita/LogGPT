@@ -17,7 +17,30 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
   const [logsError, setLogsError] = useState(null)
   const [anomaliesError, setAnomaliesError] = useState(null)
 
-  // Session-level loading/error states take precedence
+  // ✅ Hook must be here — before any conditional return
+  useEffect(() => {
+    if (!session?.id) {
+      setLogs([])
+      setAnomalies([])
+      return
+    }
+
+    setLogsLoading(true)
+    setLogsError(null)
+    getSessionLogs(session.id)
+      .then(data => setLogs(data))
+      .catch(() => setLogsError('Failed to load logs'))
+      .finally(() => setLogsLoading(false))
+
+    setAnomaliesLoading(true)
+    setAnomaliesError(null)
+    getSessionAnomalies(session.id)
+      .then(data => setAnomalies(data))
+      .catch(() => setAnomaliesError('Failed to load anomalies'))
+      .finally(() => setAnomaliesLoading(false))
+  }, [session?.id])
+
+  // Early returns AFTER all hooks
   if (loading) {
     return (
       <main className="flex-1 flex items-center justify-center">
@@ -40,28 +63,6 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
     )
   }
 
-  useEffect(() => {
-    if (!session?.id) {
-      setLogs([])
-      setAnomalies([])
-      return
-    }
-    setLogsLoading(true)
-    setLogsError(null)
-    getSessionLogs(session.id)
-      .then(data => setLogs(data))
-      .catch(() => setLogsError('Failed to load logs'))
-      .finally(() => setLogsLoading(false))
-
-    setAnomaliesLoading(true)
-    setAnomaliesError(null)
-    getSessionAnomalies(session.id)
-      .then(data => setAnomalies(data))
-      .catch(() => setAnomaliesError('Failed to load anomalies'))
-      .finally(() => setAnomaliesLoading(false))
-  }, [session?.id])
-
-  // Empty state when no session selected
   if (!session?.id) {
     return (
       <main className="flex-1 flex items-center justify-center">
@@ -76,10 +77,8 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
   return (
     <main className="flex-1 flex flex-col overflow-hidden">
       <Header session={session} />
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-8 space-y-8 max-w-7xl mx-auto pb-12">
-          {/* Upload form */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -87,7 +86,6 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
           >
             <UploadForm onUploadSuccess={onUploadSuccess} />
           </motion.div>
-          {/* AI Summary */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -95,9 +93,7 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
           >
             <AISummaryPanel session={session} />
           </motion.div>
-          {/* Content grid */}
           <div className="grid grid-cols-3 gap-8">
-            {/* Logs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -112,7 +108,6 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
                 <LogsPanel logs={logs} sessionName={session?.name} />
               )}
             </motion.div>
-            {/* Anomalies */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
