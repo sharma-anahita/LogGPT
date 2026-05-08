@@ -1,12 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { uploadLogs } from '@/services/api'
 import { motion } from 'framer-motion'
 
-export function UploadForm() {
+
+export function UploadForm({ onUploadSuccess }) {
   const [isDragging, setIsDragging] = useState(false)
   const [sessionName, setSessionName] = useState('')
+  const [file, setFile] = useState(null)
+  const [text, setText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [feedback, setFeedback] = useState(null)
+  const fileInputRef = useRef(null)
 
   const handleDragOver = (e) => {
     e.preventDefault()
@@ -20,23 +27,49 @@ export function UploadForm() {
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
-    // Handle file drop
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0])
+      setFeedback(null)
+    }
+  }
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0])
+      setFeedback(null)
+    }
+  }
+
+  const handleAreaClick = () => {
+    fileInputRef.current?.click()
   }
 
   const handleUpload = async () => {
-    if (!sessionName) return
+    if (!sessionName || (!file && !text)) return
     setIsLoading(true)
-    await new Promise(r => setTimeout(r, 1000))
+    setProgress(0)
+    setFeedback(null)
+    try {
+      const res = await uploadLogs({ sessionName, file, text, onUploadProgress: (e) => {
+        if (e.total) setProgress(Math.round((e.loaded / e.total) * 100))
+      } })
+      setFeedback({ type: 'success', message: 'Upload successful!' })
+      setSessionName('')
+      setFile(null)
+      setText('')
+      setProgress(0)
+      if (onUploadSuccess && res?.sessionId) {
+        onUploadSuccess(res.sessionId)
+      }
+    } catch (err) {
+      setFeedback({ type: 'error', message: 'Upload failed. Please try again.' })
+    }
     setIsLoading(false)
-    setSessionName('')
   }
 
   return (
-    <motion.div
-      className="glass p-8 rounded-xl border border-white/10"
-    >
+    <motion.div className="glass p-8 rounded-xl border border-white/10">
       <h3 className="text-lg font-semibold mb-6">📤 Upload Logs</h3>
-
       <div className="space-y-4">
         {/* Session name input */}
         <div>
@@ -48,34 +81,70 @@ export function UploadForm() {
             value={sessionName}
             onChange={(e) => setSessionName(e.target.value)}
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
+            disabled={isLoading}
           />
         </div>
 
-        {/* Drag and drop area */}
+        {/* Drag and drop/file input area */}
         <motion.div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={handleAreaClick}
           animate={{
             borderColor: isDragging ? 'rgba(0, 240, 255, 0.5)' : 'rgba(255, 255, 255, 0.1)',
             backgroundColor: isDragging ? 'rgba(0, 240, 255, 0.05)' : 'rgba(0, 0, 0, 0)',
           }}
-          className="p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors"
+          className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${isDragging ? 'glow-cyan' : ''}`}
         >
-          <p className="text-white/70">Drop logs file here or click to select</p>
+          <p className="text-white/70">Drop logs file here or <span className="underline text-cyan-400">click to select</span></p>
           <p className="text-sm text-white/50">Supports JSON, text, or CSV formats</p>
-
-          <input type="file" className="hidden" />
+          {file && <div className="mt-2 text-cyan-300 text-xs">Selected: {file.name}</div>}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={isLoading}
+          />
         </motion.div>
+
+        {/* Or paste logs textarea */}
+        <div>
+          <label className="text-sm text-white/70 block mb-2">Or Paste Logs</label>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={4}
+            placeholder="Paste logs here..."
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all resize-none"
+            disabled={isLoading}
+          />
+        </div>
+
+        {/* Progress bar */}
+        {isLoading && (
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-cyan-400 transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
+
+        {/* Feedback */}
+        {feedback && (
+          <div className={`text-sm mt-2 ${feedback.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{feedback.message}</div>
+        )}
 
         {/* Upload button */}
         <motion.button
-          whileHover={{ scale: sessionName ? 1.02 : 1, y: -2 }}
+          whileHover={{ scale: sessionName && (file || text) && !isLoading ? 1.02 : 1, y: -2 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleUpload}
-          disabled={!sessionName || isLoading}
+          disabled={!sessionName || (!file && !text) || isLoading}
           className={`w-full px-6 py-3 rounded-lg font-semibold transition-all ${
-            sessionName
+            sessionName && (file || text) && !isLoading
               ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-black hover:shadow-lg hover:shadow-cyan-500/50'
               : 'bg-white/10 text-white/50 cursor-not-allowed'
           }`}

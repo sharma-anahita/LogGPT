@@ -5,8 +5,24 @@ import { useEffect, useState } from 'react'
 
 export function AnimatedBackground() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [particles, setParticles] = useState([])
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+    // Responsive particle count
+    const count = window.innerWidth > 1024 ? 36 : window.innerWidth > 640 ? 24 : 14
+    const newParticles = [...Array(count)].map(() => ({
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 3 + Math.random() * 2,
+      size: 0.5 + Math.random() * 1.5,
+      blur: 2 + Math.random() * 6,
+      opacity: 0.25 + Math.random() * 0.4,
+    }))
+    setParticles(newParticles)
+
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY })
     }
@@ -70,24 +86,29 @@ export function AnimatedBackground() {
 
       {/* Floating particles */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {[...Array(20)].map((_, i) => (
+        {isClient && particles.map((particle, i) => (
           <motion.div
             key={i}
             animate={{
-              y: [0, -30, 0],
-              x: [0, Math.sin(i) * 10, 0],
-              opacity: [0, 0.5, 0],
+              y: [0, -30 * particle.size, 0],
+              x: [0, Math.sin(i) * 10 * particle.size, 0],
+              opacity: [0, particle.opacity, 0],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
-              delay: Math.random() * 2,
+              duration: particle.duration,
+              delay: particle.delay,
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-            className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+            className="absolute rounded-full"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+              width: `${particle.size * 6}px`,
+              height: `${particle.size * 6}px`,
+              background: 'radial-gradient(circle, rgba(0,240,255,0.7) 0%, rgba(0,240,255,0.1) 80%)',
+              filter: `blur(${particle.blur}px)`,
+              opacity: particle.opacity,
             }}
           />
         ))}

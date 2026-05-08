@@ -1,44 +1,45 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Sidebar } from '@/components/workspace/Sidebar'
 import { MainContent } from '@/components/workspace/MainContent'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
+import { getSessions } from '@/services/api'
 
-const mockSessions = [
-  {
-    id: 1,
-    name: 'Payment Service Outage',
-    timestamp: Date.now() - 2 * 60 * 60 * 1000,
-    logCount: 142,
-    anomalyCount: 3,
-  },
-  {
-    id: 2,
-    name: 'Database Connection Pool',
-    timestamp: Date.now() - 24 * 60 * 60 * 1000,
-    logCount: 89,
-    anomalyCount: 1,
-  },
-  {
-    id: 3,
-    name: 'API Gateway Timeout',
-    timestamp: Date.now() - 48 * 60 * 60 * 1000,
-    logCount: 256,
-    anomalyCount: 5,
-  },
-]
+  const [sessions, setSessions] = useState([])
+  const [activeSessionId, setActiveSessionId] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-export function Workspace() {
-  const [activeSessionId, setActiveSessionId] = useState(mockSessions[0].id)
+  // Refresh sessions and select a session by id
+  const refreshSessions = async (selectId) => {
+    setLoading(true)
+    try {
+      const data = await getSessions()
+      setSessions(data)
+      if (selectId) {
+        setActiveSessionId(selectId)
+      } else {
+        setActiveSessionId(data[0]?.id || null)
+      }
+      setLoading(false)
+    } catch (err) {
+      setError('Failed to load sessions')
+      setLoading(false)
+    }
+  }
 
-  const activeSession = mockSessions.find(s => s.id === activeSessionId)
+  useEffect(() => {
+    refreshSessions()
+    // eslint-disable-next-line
+  }, [])
+
+  const activeSession = sessions.find(s => s.id === activeSessionId)
 
   return (
     <div className="min-h-screen bg-black overflow-hidden">
       <AnimatedBackground />
-
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -47,13 +48,19 @@ export function Workspace() {
       >
         {/* Sidebar */}
         <Sidebar
-          sessions={mockSessions}
+          sessions={sessions}
           activeSessionId={activeSessionId}
           onSelectSession={setActiveSessionId}
+          loading={loading}
+          error={error}
         />
-
         {/* Main content */}
-        <MainContent session={activeSession} />
+        <MainContent
+          session={activeSession}
+          loading={loading}
+          error={error}
+          onUploadSuccess={refreshSessions}
+        />
       </motion.div>
     </div>
   )

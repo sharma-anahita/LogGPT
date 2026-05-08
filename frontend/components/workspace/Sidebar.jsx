@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 
-export function Sidebar({ sessions, activeSessionId, onSelectSession }) {
+export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, error }) {
   return (
     <motion.aside
       initial={{ x: -300, opacity: 0 }}
@@ -31,7 +31,16 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession }) {
           Sessions
         </p>
 
-        {sessions.map((session, index) => (
+        {loading && (
+          <div className="text-white/40 px-2 py-4 animate-pulse">Loading sessions…</div>
+        )}
+        {error && (
+          <div className="text-red-400 px-2 py-4">{error}</div>
+        )}
+        {!loading && !error && sessions.length === 0 && (
+          <div className="text-white/40 px-2 py-4">No sessions found.</div>
+        )}
+        {!loading && !error && sessions.map((session, index) => (
           <motion.button
             key={session.id}
             initial={{ opacity: 0, x: -20 }}
@@ -58,6 +67,11 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession }) {
 
             <p className="text-xs text-white/50">
               {formatDistanceToNow(new Date(session.timestamp), { addSuffix: true })}
+              {session.status && (
+                <span className="ml-2 px-2 py-0.5 rounded bg-white/10 text-white/40 text-[10px] align-middle">
+                  {session.status}
+                </span>
+              )}
             </p>
 
             <div className="flex gap-3 mt-3">
