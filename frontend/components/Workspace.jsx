@@ -7,6 +7,7 @@ import { MainContent } from '@/components/workspace/MainContent'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
 import { getSessions } from '@/services/api'
 
+export default function Workspace() {
   const [sessions, setSessions] = useState([])
   const [activeSessionId, setActiveSessionId] = useState(null)
   const [loading, setLoading] = useState(true)

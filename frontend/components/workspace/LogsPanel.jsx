@@ -34,42 +34,49 @@ export function LogsPanel({ logs, sessionName }) {
   }
 
   return (
-    <div className="glass p-6 rounded-xl border border-white/10">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold">📋 Logs</h3>
-        <span className="text-sm text-white/50">{logs.length} entries</span>
+    <div className="glass p-7 rounded-2xl border border-white/10 shadow-lg">
+      <div className="flex items-center justify-between mb-7">
+        <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">📋 Logs</h3>
+        <span className="text-sm text-white/40 font-mono">{logs.length} entries</span>
       </div>
 
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-2 max-h-96 overflow-y-auto"
-      >
-        {logs.map((log, index) => (
-          <motion.div
-            key={log.id}
-            variants={itemVariants}
-            whileHover={{ x: 4, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-            className={`p-3 rounded-lg border ${getLevelColor(log.level)} transition-colors`}
-          >
-            <div className="flex items-start gap-3">
-              <span className={`px-2 py-1 rounded text-xs font-semibold border ${getLevelColor(log.level)}`}>
-                {log.level.toUpperCase()}
-              </span>
-
-              <div className="flex-1">
-                <p className="text-sm text-white/90">{log.message}</p>
-                <div className="flex gap-2 mt-1 text-xs text-white/50">
-                  <span>{log.service}</span>
-                  <span>•</span>
-                  <span>{formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}</span>
+      {logs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-white/30 text-base animate-pulse">
+          <span className="text-3xl mb-2">🗒️</span>
+          No logs for this session.
+        </div>
+      ) : (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-2 max-h-96 overflow-y-auto pr-1"
+        >
+          {logs.map((log, index) => (
+            <motion.div
+              key={log.id}
+              variants={itemVariants}
+              whileHover={{ x: 6, boxShadow: '0 0 16px 2px rgba(0,240,255,0.10)', backgroundColor: 'rgba(0,240,255,0.03)' }}
+              className={`p-4 rounded-xl border ${getLevelColor(log.level)} transition-smooth group`}
+            >
+              <div className="flex items-start gap-4">
+                <span className={`px-2.5 py-1 rounded text-xs font-bold border ${getLevelColor(log.level)} group-hover:text-cyan-300 transition-colors font-mono tracking-wide`}> 
+                  {log.level.toUpperCase()}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs text-white/40 font-mono">{formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}</span>
+                    <span className="text-xs text-white/50 font-mono bg-white/5 px-2 py-0.5 rounded ml-2">{log.service}</span>
+                  </div>
+                  <div className="text-sm text-white/90 font-medium leading-snug break-words">
+                    {log.message}
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
     </div>
   )
 }

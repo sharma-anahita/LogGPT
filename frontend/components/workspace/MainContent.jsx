@@ -17,6 +17,29 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
   const [logsError, setLogsError] = useState(null)
   const [anomaliesError, setAnomaliesError] = useState(null)
 
+  // Session-level loading/error states take precedence
+  if (loading) {
+    return (
+      <main className="flex-1 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-28 animate-pulse text-white/40">
+          <span className="text-5xl mb-5">⏳</span>
+          <span className="text-xl font-bold tracking-tight">Loading session data...</span>
+        </div>
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="flex-1 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-28 text-red-400 animate-pulse">
+          <span className="text-5xl mb-5">❌</span>
+          <span className="text-xl font-bold tracking-tight">{error}</span>
+        </div>
+      </main>
+    )
+  }
+
   useEffect(() => {
     if (!session?.id) {
       setLogs([])
@@ -37,6 +60,18 @@ export function MainContent({ session, loading, error, onUploadSuccess }) {
       .catch(() => setAnomaliesError('Failed to load anomalies'))
       .finally(() => setAnomaliesLoading(false))
   }, [session?.id])
+
+  // Empty state when no session selected
+  if (!session?.id) {
+    return (
+      <main className="flex-1 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-28 text-white/30 animate-pulse">
+          <span className="text-5xl mb-5">🪐</span>
+          <span className="text-xl font-bold tracking-tight">No session selected.</span>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="flex-1 flex flex-col overflow-hidden">

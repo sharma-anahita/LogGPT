@@ -68,19 +68,19 @@ export function UploadForm({ onUploadSuccess }) {
   }
 
   return (
-    <motion.div className="glass p-8 rounded-xl border border-white/10">
-      <h3 className="text-lg font-semibold mb-6">📤 Upload Logs</h3>
-      <div className="space-y-4">
+    <motion.div className="glass p-8 rounded-2xl border border-white/10 shadow-lg">
+      <h3 className="text-xl font-bold tracking-tight text-white mb-7">📤 Upload Logs</h3>
+      <div className="space-y-6">
         {/* Session name input */}
         <div>
-          <label className="text-sm text-white/70 block mb-2">Session Name</label>
+          <label className="text-sm text-white/70 block mb-2 font-semibold tracking-wide">Session Name</label>
           <motion.input
-            whileFocus={{ scale: 1.02 }}
+            whileFocus={{ scale: 1.03, boxShadow: '0 0 0 2px rgba(0,240,255,0.15)' }}
             type="text"
             placeholder="e.g., Payment Service Incident"
             value={sessionName}
             onChange={(e) => setSessionName(e.target.value)}
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all font-mono text-base"
             disabled={isLoading}
           />
         </div>
@@ -93,13 +93,13 @@ export function UploadForm({ onUploadSuccess }) {
           onClick={handleAreaClick}
           animate={{
             borderColor: isDragging ? 'rgba(0, 240, 255, 0.5)' : 'rgba(255, 255, 255, 0.1)',
-            backgroundColor: isDragging ? 'rgba(0, 240, 255, 0.05)' : 'rgba(0, 0, 0, 0)',
+            backgroundColor: isDragging ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0, 0, 0, 0)',
           }}
-          className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${isDragging ? 'glow-cyan' : ''}`}
+          className={`p-8 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${isDragging ? 'glow-cyan-lg' : ''}`}
         >
-          <p className="text-white/70">Drop logs file here or <span className="underline text-cyan-400">click to select</span></p>
-          <p className="text-sm text-white/50">Supports JSON, text, or CSV formats</p>
-          {file && <div className="mt-2 text-cyan-300 text-xs">Selected: {file.name}</div>}
+          <p className="text-white/70 text-base font-medium">Drop logs file here or <span className="underline text-cyan-400">click to select</span></p>
+          <p className="text-xs text-white/50 mt-1">Supports JSON, text, or CSV formats</p>
+          {file && <div className="mt-2 text-cyan-300 text-xs font-mono">Selected: {file.name}</div>}
           <input
             ref={fileInputRef}
             type="file"
@@ -111,22 +111,22 @@ export function UploadForm({ onUploadSuccess }) {
 
         {/* Or paste logs textarea */}
         <div>
-          <label className="text-sm text-white/70 block mb-2">Or Paste Logs</label>
+          <label className="text-sm text-white/70 block mb-2 font-semibold tracking-wide">Or Paste Logs</label>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
             rows={4}
             placeholder="Paste logs here..."
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all resize-none"
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all resize-none font-mono text-base"
             disabled={isLoading}
           />
         </div>
 
         {/* Progress bar */}
         {isLoading && (
-          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden animate-pulse">
             <div
-              className="h-2 bg-cyan-400 transition-all"
+              className="h-2 bg-gradient-to-r from-cyan-400 to-blue-500 transition-all animate-shimmer"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -134,18 +134,18 @@ export function UploadForm({ onUploadSuccess }) {
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-sm mt-2 ${feedback.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{feedback.message}</div>
+          <div className={`text-sm mt-2 font-semibold ${feedback.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{feedback.message}</div>
         )}
 
         {/* Upload button */}
         <motion.button
-          whileHover={{ scale: sessionName && (file || text) && !isLoading ? 1.02 : 1, y: -2 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: sessionName && (file || text) && !isLoading ? 1.04 : 1, y: -2, boxShadow: sessionName && (file || text) && !isLoading ? '0 0 24px 4px rgba(0,240,255,0.18)' : undefined }}
+          whileTap={{ scale: 0.97 }}
           onClick={handleUpload}
           disabled={!sessionName || (!file && !text) || isLoading}
-          className={`w-full px-6 py-3 rounded-lg font-semibold transition-all ${
+          className={`w-full px-7 py-3 rounded-xl font-bold text-base transition-smooth tracking-wide select-none ${
             sessionName && (file || text) && !isLoading
-              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-black hover:shadow-lg hover:shadow-cyan-500/50'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-black hover:shadow-lg hover:shadow-cyan-500/50 glow-cyan'
               : 'bg-white/10 text-white/50 cursor-not-allowed'
           }`}
         >

@@ -7,7 +7,7 @@ import { HeroSection } from '@/components/HeroSection'
 import { FeaturesSection } from '@/components/FeaturesSection'
 import { AIDemoSection } from '@/components/AIDemoSection'
 import { CTASection } from '@/components/CTASection'
-import { Workspace } from '@/components/Workspace'
+import Workspace from '@/components/Workspace'
 
 export default function Home() {
   const [showWorkspace, setShowWorkspace] = useState(false)
