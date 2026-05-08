@@ -2,10 +2,10 @@ require("dotenv").config(require("path").resolve(__dirname, "../../.env"));
 const { Pool } = require("pg");
 
 const pool = new Pool({
-  user: process.env.POSTGRES_USER || "loggpt",
+  user: process.env.POSTGRES_USER || "postgres",
   host: process.env.POSTGRES_HOST || "localhost",
   database: process.env.POSTGRES_DB || "loggpt",
-  password: process.env.POSTGRES_PASSWORD || "loggpt",
+  password: process.env.POSTGRES_PASSWORD || "hi123",
   port: process.env.POSTGRES_PORT || 5432,
 });
 
