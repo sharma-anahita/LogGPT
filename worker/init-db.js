@@ -1,22 +1,26 @@
-// worker/init-db.js
-// Run this once: node init-db.js
-
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../.env"),
+});
 const { Pool } = require("pg");
 
+console.log("process.env.POSTGRES_USER:", process.env.POSTGRES_USER);
+console.log("process.env.POSTGRES_HOST:", process.env.POSTGRES_HOST);
+console.log("process.env.POSTGRES_DB:", process.env.POSTGRES_DB);
+console.log("process.env.POSTGRES_PASSWORD:", process.env.POSTGRES_PASSWORD);
+console.log("process.env.POSTGRES_PORT:", process.env.POSTGRES_PORT);
 const pool = new Pool({
-  user: process.env.POSTGRES_USER || "loggpt",
+  user: process.env.POSTGRES_USER || "loggpt_user",
   host: process.env.POSTGRES_HOST || "localhost",
   database: process.env.POSTGRES_DB || "loggpt",
-  password: process.env.POSTGRES_PASSWORD || "loggpt",
+  password: process.env.POSTGRES_PASSWORD || "12345678",
   port: process.env.POSTGRES_PORT || 5432,
 });
 
 const initDB = async () => {
   try {
-    console.log("[\u2731] Initializing database...");
+    console.log("[✶] Initializing database...");
 
-    // Create logs table
-    const createTableQuery = `
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS logs (
         id SERIAL PRIMARY KEY,
         timestamp TIMESTAMP NOT NULL,
@@ -24,22 +28,24 @@ const initDB = async () => {
         service VARCHAR(255),
         message TEXT,
         raw TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_service (service)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `;
+    `);
 
-    await pool.query(createTableQuery);
-    console.log("[\u2713] Table 'logs' created successfully");
+    // Indexes must be created separately in Postgres
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_timestamp ON logs (timestamp);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_service ON logs (service);
+    `);
 
-    // Clear existing logs for fresh test
+    console.log("[✓] Table 'logs' and indexes created");
+
     await pool.query("DELETE FROM logs;");
-    console.log("[\u2713] Cleared existing logs");
+    console.log("[✓] Cleared existing logs");
 
-    console.log("\n[\u2713] Database initialized successfully!");
-    console.log("Ready for testing. Run: npm start\n");
-
+    console.log("\n[✓] Database initialized successfully!");
     await pool.end();
   } catch (error) {
     console.error("[ERROR] Database initialization failed:", error.message);

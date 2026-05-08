@@ -1,3 +1,4 @@
+require("dotenv").config(require("path").resolve(__dirname, "../../.env"));
 const express = require("express");
 const logRoutes = require("./routes/logRoutes");
 

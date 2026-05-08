@@ -14,7 +14,7 @@ yarn-error.log*
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
-
+test*
 # Python
 __pycache__/
 *.py[cod]
@@ -61,7 +61,7 @@ htmlcov/
 *.launch
 .settings/
 *.sublime-workspace
-
+.venv
 # Logs
 logs/
 *.log

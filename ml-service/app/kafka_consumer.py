@@ -1,25 +1,19 @@
 import json
 import os
+import threading
 from kafka import KafkaConsumer
-from anomaly_detector import FrequencyAnomalyDetector, summarize_logs, generate_log_summary
+from anomaly_detector import FrequencyAnomalyDetector, summarize_logs, generate_log_summary  # bug 6 fix
 from dotenv import load_dotenv
-
-
 from pathlib import Path
-# Load environment variables from project root .env
+
 root_env_path = Path(__file__).resolve().parents[2] / '.env'
 load_dotenv(dotenv_path=root_env_path)
+
 KAFKA_BROKER_URL = os.environ.get('KAFKA_BROKER_URL', 'localhost:9092')
 KAFKA_TOPIC = os.environ.get('KAFKA_TOPIC', 'logs-topic')
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', 'YOUR_GROQ_API_KEY')
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 LLM_MODEL = os.environ.get('LLM_MODEL', 'llama3-8b-8192')
 
-
-
-print("[ENV] KAFKA_BROKER_URL:", KAFKA_BROKER_URL)
-print("[ENV] KAFKA_TOPIC:", KAFKA_TOPIC)
-print("[ENV] GROQ_API_KEY:", GROQ_API_KEY)
-print("[ENV] LLM_MODEL:", LLM_MODEL)
 
 def consume_logs():
     consumer = KafkaConsumer(
@@ -33,6 +27,7 @@ def consume_logs():
     print(f"Listening for messages on topic '{KAFKA_TOPIC}'...")
     return consumer
 
+
 def process_log_pipeline():
     detector = FrequencyAnomalyDetector(window_seconds=60, error_threshold=50, buffer_size=200)
     consumer = consume_logs()
@@ -41,9 +36,8 @@ def process_log_pipeline():
         print("Received log:", log)
         anomaly, recent_logs, severity = detector.add_log(log)
         if anomaly:
-            print(f"[ALERT] Anomaly detected! Severity: {severity}. Aggregating logs...")
+            print(f"[ALERT] Anomaly detected! Severity: {severity}")
             agg = summarize_logs(recent_logs)
-            print("Aggregated logs:")
             for line in agg:
                 print(line)
             try:
@@ -51,6 +45,12 @@ def process_log_pipeline():
                 print(f"[SUMMARY][{severity}]", summary)
             except Exception as e:
                 print("[ERROR] LLM summarization failed:", e)
+
+
+def start_consumer_thread():
+    thread = threading.Thread(target=process_log_pipeline, daemon=True)
+    thread.start()
+    print("[✓] Kafka consumer thread started")
 
 
 if __name__ == "__main__":

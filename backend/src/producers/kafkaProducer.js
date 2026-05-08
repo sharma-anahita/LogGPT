@@ -1,10 +1,9 @@
 // backend/src/producers/kafkaProducer.js
-
+require("dotenv").config();
 const { Kafka } = require("kafkajs");
-
 const kafka = new Kafka({
   clientId: "loggpt-backend",
-  brokers: ["localhost:9092"], // change when using docker
+  brokers: [(process.env.KAFKA_BROKER || "localhost:9092")], // change when using docker
 });
 
 const producer = kafka.producer();
