@@ -92,6 +92,42 @@ export default function RegisterPage() {
       document.body.appendChild(script)
     }
 
+    // If script already present (client-side navigation), try to initialize/render now
+    if (existing) {
+      try {
+        if (window.google && !window.google.accounts) {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: async (resp) => {
+              try {
+                const data = await googleSignIn(resp.credential)
+                saveToken(data.token)
+                router.push('/workspace')
+              } catch (err) {
+                console.error('Google sign-in failed', err)
+                setError(err.response?.data?.error || 'Google sign-in failed')
+              }
+            },
+          })
+
+          window.google.accounts.id.renderButton(
+            document.getElementById('googleSignInButton'),
+            { theme: 'outline', size: 'large' }
+          )
+          console.log('[GSI] initialized after existing script')
+        } else if (window.google && window.google.accounts) {
+          try {
+            window.google.accounts.id.renderButton(document.getElementById('googleSignInButton'), { theme: 'outline', size: 'large' })
+            console.log('[GSI] rendered existing accounts button')
+          } catch (e) {
+            console.warn('[GSI] render attempt failed', e)
+          }
+        }
+      } catch (e) {
+        console.error('[GSI] existing script init error', e)
+      }
+    }
+
     // After short delay, log whether button container exists and google object
     setTimeout(() => {
       console.log('[GSI] googleSignInButton exists?', !!document.getElementById('googleSignInButton'))
