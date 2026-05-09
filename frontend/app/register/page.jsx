@@ -57,6 +57,7 @@ export default function RegisterPage() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     if (!clientId) return
 
+    console.log('[GSI] NEXT_PUBLIC_GOOGLE_CLIENT_ID:', clientId)
     const existing = document.getElementById('google-client-script')
     if (!existing) {
       const script = document.createElement('script')
@@ -64,7 +65,9 @@ export default function RegisterPage() {
       script.id = 'google-client-script'
       script.async = true
       script.defer = true
+      script.onerror = (e) => console.error('[GSI] script load error', e)
       script.onload = () => {
+        console.log('[GSI] script loaded, window.google present?', !!window.google)
         if (window.google) {
           window.google.accounts.id.initialize({
             client_id: clientId,
@@ -88,6 +91,12 @@ export default function RegisterPage() {
       }
       document.body.appendChild(script)
     }
+
+    // After short delay, log whether button container exists and google object
+    setTimeout(() => {
+      console.log('[GSI] googleSignInButton exists?', !!document.getElementById('googleSignInButton'))
+      console.log('[GSI] window.google.accounts?', !!(window.google && window.google.accounts))
+    }, 1200)
 
     return () => {}
   }, [])

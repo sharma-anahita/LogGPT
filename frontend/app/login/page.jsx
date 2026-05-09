@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,7 +36,7 @@ export default function LoginPage() {
     // Load Google Identity Services button
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     if (!clientId) return
-
+ 
     const existing = document.getElementById('google-client-script')
     if (!existing) {
       const script = document.createElement('script')
@@ -43,7 +44,8 @@ export default function LoginPage() {
       script.id = 'google-client-script'
       script.async = true
       script.defer = true
-      script.onload = () => {
+      script.onerror = (e) => console.error('[GSI] script load error', e)
+      script.onload = () => { 
         if (window.google) {
           window.google.accounts.id.initialize({
             client_id: clientId,
@@ -68,6 +70,7 @@ export default function LoginPage() {
       document.body.appendChild(script)
     }
 
+    
     return () => {
       // nothing to cleanup for now
     }
@@ -134,7 +137,22 @@ export default function LoginPage() {
             </Link>
           </p>
           <div className="mt-4 flex justify-center">
-            <div id="googleSignInButton" />
+            {clientId ? (
+              <div id="googleSignInButton" />
+            ) : (
+              <button
+                onClick={() => {
+                  // Quick guidance when client id is missing
+                  const msg = `Google Client ID is not configured.\n\nAdd NEXT_PUBLIC_GOOGLE_CLIENT_ID to frontend/.env.local and restart Next.js.\n\nOpen Google Cloud Console?`;
+                  if (window.confirm(msg)) {
+                    window.open('https://console.cloud.google.com/apis/credentials', '_blank')
+                  }
+                }}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-md border border-white/10"
+              >
+                Sign in with Google (configure)
+              </button>
+            )}
           </div>
         </div>
       </div>
