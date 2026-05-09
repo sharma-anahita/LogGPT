@@ -70,7 +70,7 @@ export function CTASection({ onCtaClick }) {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="mt-12 pt-8 border-t border-white/10"
           >
-            <p className="text-sm text-white/50 mb-4">Used by teams at:</p>
+            {/* <p className="text-sm text-white/50 mb-4">Used by teams at:</p>
             <div className="flex flex-wrap justify-center gap-8 text-white/50">
               <span>Scale Inc</span>
               <span>•</span>
@@ -79,7 +79,7 @@ export function CTASection({ onCtaClick }) {
               <span>CloudPeak</span>
               <span>•</span>
               <span>Infrastructure Co</span>
-            </div>
+            </div> */}
           </motion.div>
         </motion.div>
       </div>
