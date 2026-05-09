@@ -70,7 +70,7 @@ export function HeroSection({ onCtaClick }) {
             variants={itemVariants}
             className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed"
           >
-            LogGPT uses advanced AI to analyze logs, detect anomalies, and provide intelligent insights in real-time.
+            Use LogGPT to analyze logs, detect anomalies, and provide intelligent insights in real-time.
             Built for teams that take observability seriously.
           </motion.p>
 

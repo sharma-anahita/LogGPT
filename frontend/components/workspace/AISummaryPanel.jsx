@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import api from '@/services/api'
 
@@ -9,59 +9,38 @@ export function AISummaryPanel({ session }) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [error, setError] = useState(null)
-  const [runKey, setRunKey] = useState(0)
+  // Remove runKey and useEffect for manual trigger
 
-  const handleRefresh = () => {
-    setIsComplete(false)
-    setIsStreaming(false)
-    setSummary('')
-    setError(null)
-    setRunKey(k => k + 1)
-  }
 
-  useEffect(() => {
-    if (!session?.id) return
-
-    let cancelled = false
-
-    const run = async () => {
-      setIsStreaming(true)
-      setIsComplete(false)
-      setSummary('')
-      setError(null)
-
-      try {
-        const res = await api.post(`/sessions/${session.id}/summary`)
-        if (cancelled) return
-
-        const text = res.data?.summary ?? 'No summary available.'
-
-        // Typewriter effect on the real response
-        let i = 0
-        const tick = () => {
-          if (cancelled) return
-          if (i <= text.length) {
-            setSummary(text.slice(0, i))
-            i++
-            setTimeout(tick, 8)
-          } else {
-            setIsComplete(true)
-            setIsStreaming(false)
-          }
+  const handleGenerateSummary = async () => {
+    if (!session?.id) return;
+    setIsComplete(false);
+    setIsStreaming(true);
+    setSummary('');
+    setError(null);
+    try {
+      const res = await api.post(`/sessions/${session.id}/summary`);
+      const text = res.data?.summary ?? 'No summary available.';
+      let i = 0;
+      const tick = () => {
+        if (i <= text.length) {
+          setSummary(text.slice(0, i));
+          i++;
+          setTimeout(tick, 8);
+        } else {
+          setIsComplete(true);
+          setIsStreaming(false);
         }
-        tick()
-      } catch (err) {
-        if (!cancelled) {
-          const detail = err.response?.data?.error ?? err.message
-          setError(detail)
-          setIsStreaming(false)
-        }
-      }
+      };
+      tick();
+    } catch (err) {
+      const detail = err.response?.data?.error ?? err.message;
+      setError(detail);
+      setIsStreaming(false);
     }
+  };
 
-    run()
-    return () => { cancelled = true }
-  }, [session?.id, runKey])
+
 
   return (
     <motion.div
@@ -94,7 +73,7 @@ export function AISummaryPanel({ session }) {
                   ? 'Analyzing session data…'
                   : isComplete
                   ? 'Analysis complete'
-                  : 'Waiting for session'}
+                  : 'Click the button to generate a summary'}
               </p>
             </div>
           </div>
@@ -107,6 +86,20 @@ export function AISummaryPanel({ session }) {
             />
           )}
         </div>
+
+        {/* Generate Summary Button */}
+        {!isStreaming && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleGenerateSummary}
+            className="mb-6 px-5 py-2 rounded-lg font-semibold text-white bg-gradient-to-br from-blue-500 to-cyan-500 shadow-md hover:from-blue-600 hover:to-cyan-600 transition-all"
+            style={{ display: 'block', marginLeft: 'auto' }}
+            disabled={!session?.id}
+          >
+            Generate AI Summary
+          </motion.button>
+        )}
 
         {/* Error */}
         {error && (
@@ -146,14 +139,7 @@ export function AISummaryPanel({ session }) {
               📋 Copy
             </motion.button>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleRefresh}
-              className="px-4 py-2 rounded-lg border border-white/20 text-sm font-semibold hover:bg-white/10 transition-all"
-            >
-              🔄 Refresh
-            </motion.button>
+            {/* Removed Refresh button as handleRefresh is not defined. */}
           </motion.div>
         )}
       </div>
