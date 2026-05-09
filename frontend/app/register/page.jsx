@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { registerUser, saveToken } from '@/services/auth'
 import { googleSignIn } from '@/services/auth'
+import { AnimatedBackground } from '@/components/AnimatedBackground'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -92,9 +93,10 @@ export default function RegisterPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-800/50 backdrop-blur-lg border border-slate-700/30 rounded-2xl p-8">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+      <AnimatedBackground />
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-slate-800/30 backdrop-blur-lg border border-slate-700/20 rounded-2xl p-8">
           <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
           <p className="text-slate-400 mb-8">Join LogGPT and start analyzing logs</p>
 
