@@ -97,3 +97,9 @@ tmp/
 
 # IDE plugins
 .pylint.d/
+
+AUTHENTICATION_IMPLEMENTATION.md
+FILE_MANIFEST.md
+QUICK_START.md
+/.pnp
+.pnp.js

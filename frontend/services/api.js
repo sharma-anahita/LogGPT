@@ -1,8 +1,20 @@
 import axios from 'axios'
+import { getToken } from './auth'
 
 const api = axios.create({
   baseURL: '/api',
   timeout: 10000,
+})
+
+// Add JWT token to all requests
+api.interceptors.request.use((config) => {
+  const token = getToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+}, (error) => {
+  return Promise.reject(error)
 })
 
 export async function getSessions() {
@@ -17,6 +29,11 @@ export async function getSessionLogs(sessionId) {
 
 export async function getSessionAnomalies(sessionId) {
   const res = await api.get(`/sessions/${sessionId}/anomalies`)
+  return res.data
+}
+
+export async function createSession(name, config = null) {
+  const res = await api.post('/sessions', { name, config })
   return res.data
 }
 

@@ -2,8 +2,16 @@
 
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
+import { isAuthenticated } from '@/services/auth'
 
-export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, error }) {
+export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, error, onCreateSession }) {
+  const handleCreate = async () => {
+    const name = window.prompt('Create session - enter a name for this session:')
+    if (!name) return
+    if (onCreateSession) {
+      await onCreateSession(name)
+    }
+  }
   return (
     <motion.aside
       initial={{ x: -300, opacity: 0 }}
@@ -22,6 +30,17 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, e
             LogGPT
           </h1>
           <p className="text-xs text-white/50 mt-2">AI Observability</p>
+          {/* Create session button visible only when authenticated */}
+          {typeof window !== 'undefined' && isAuthenticated() && (
+            <div className="mt-3">
+              <button
+                onClick={handleCreate}
+                className="px-3 py-1 text-sm rounded bg-cyan-500 hover:bg-cyan-600 text-black font-semibold"
+              >
+                + New Session
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
 

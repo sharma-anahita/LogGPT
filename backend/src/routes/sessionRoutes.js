@@ -1,4 +1,5 @@
 const express = require("express");
+const authMiddleware = require("../middleware/authMiddleware");
 const {
   createSession,
   getSessions,
@@ -10,6 +11,9 @@ const {
 } = require("../controllers/sessionController");
 
 const router = express.Router();
+
+// All session routes require authentication
+router.use(authMiddleware);
 
 // Session management
 router.post("/", createSession);

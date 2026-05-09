@@ -5,6 +5,7 @@ const pool = require('../config/database')
 exports.uploadLogs = async (req, res) => {
   try {
     const { logs, service, sessionId, sessionName } = req.body
+    const userId = req.user.id;
 
     if (!logs || !Array.isArray(logs)) {
       return res.status(400).json({ error: 'Logs must be an array' })
@@ -15,11 +16,12 @@ exports.uploadLogs = async (req, res) => {
     // Create a new session only when a name is given and no existing id
     if (sessionName && !sessionId) {
       const sessionQuery = `
-        INSERT INTO sessions (name, status, config)
-        VALUES ($1, $2, $3)
+        INSERT INTO sessions (user_id, name, status, config)
+        VALUES ($1, $2, $3, $4)
         RETURNING id
       `
       const sessionResult = await pool.query(sessionQuery, [
+        userId,
         sessionName,
         'processing',
         JSON.stringify({ service }),
@@ -34,6 +36,7 @@ exports.uploadLogs = async (req, res) => {
 
     const logsWithSession = parsedLogs.map((log) => ({
       ...log,
+      userId,
       sessionId: finalSessionId,
     }))
 

@@ -3,13 +3,14 @@ const pool = require("../config/database");
 exports.createSession = async (req, res) => {
   try {
     const { name, config } = req.body;
+    const userId = req.user.id;
     if (!name) return res.status(400).json({ error: "Session name is required" });
 
     const result = await pool.query(
-      `INSERT INTO sessions (name, status, config)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, status, config, created_at, updated_at`,
-      [name, "processing", config ? JSON.stringify(config) : null]
+      `INSERT INTO sessions (user_id, name, status, config)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, user_id, name, status, config, created_at, updated_at`,
+      [userId, name, "processing", config ? JSON.stringify(config) : null]
     );
 
     console.log(`[API] Session created: ${result.rows[0].id}`);
@@ -22,6 +23,7 @@ exports.createSession = async (req, res) => {
 
 exports.getSessions = async (req, res) => {
   try {
+    const userId = req.user.id;
     const result = await pool.query(
       `SELECT
          s.id,
@@ -35,8 +37,10 @@ exports.getSessions = async (req, res) => {
        FROM sessions s
        LEFT JOIN logs l ON s.id = l.session_id
        LEFT JOIN anomalies a ON s.id = a.session_id
+       WHERE s.user_id = $1
        GROUP BY s.id, s.name, s.status, s.config, s.created_at, s.updated_at
-       ORDER BY s.created_at DESC`
+       ORDER BY s.created_at DESC`,
+      [userId]
     );
     res.json(result.rows);
   } catch (error) {
@@ -48,6 +52,7 @@ exports.getSessions = async (req, res) => {
 exports.getSessionById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     const result = await pool.query(
       `SELECT
          s.id,
@@ -61,9 +66,9 @@ exports.getSessionById = async (req, res) => {
        FROM sessions s
        LEFT JOIN logs l ON s.id = l.session_id
        LEFT JOIN anomalies a ON s.id = a.session_id
-       WHERE s.id = $1
+       WHERE s.id = $1 AND s.user_id = $2
        GROUP BY s.id, s.name, s.status, s.config, s.created_at, s.updated_at`,
-      [id]
+      [id, userId]
     );
 
     if (result.rows.length === 0)
@@ -79,16 +84,17 @@ exports.getSessionById = async (req, res) => {
 exports.getSessionLogs = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
     const offset = parseInt(req.query.offset) || 0;
 
     const result = await pool.query(
       `SELECT id, timestamp, level, service, message
        FROM logs
-       WHERE session_id = $1
+       WHERE session_id = $1 AND user_id = $2
        ORDER BY timestamp DESC
-       LIMIT $2 OFFSET $3`,
-      [id, limit, offset]
+       LIMIT $3 OFFSET $4`,
+      [id, userId, limit, offset]
     );
     res.json(result.rows);
   } catch (error) {
@@ -100,6 +106,7 @@ exports.getSessionLogs = async (req, res) => {
 exports.getSessionAnomalies = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
     const offset = parseInt(req.query.offset) || 0;
 
@@ -115,10 +122,10 @@ exports.getSessionAnomalies = async (req, res) => {
          COALESCE((metadata->>'confidence')::float, 0.75) AS confidence,
          created_at
        FROM anomalies
-       WHERE session_id = $1
+       WHERE session_id = $1 AND user_id = $2
        ORDER BY start_time DESC
-       LIMIT $2 OFFSET $3`,
-      [id, limit, offset]
+       LIMIT $3 OFFSET $4`,
+      [id, userId, limit, offset]
     );
     res.json(result.rows);
   } catch (error) {
@@ -131,14 +138,15 @@ exports.updateSessionStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const userId = req.user.id;
     if (!status) return res.status(400).json({ error: "Status is required" });
 
     const result = await pool.query(
       `UPDATE sessions
        SET status = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
+       WHERE id = $2 AND user_id = $3
        RETURNING id, name, status, config, created_at, updated_at`,
-      [status, id]
+      [status, id, userId]
     );
 
     if (result.rows.length === 0)
@@ -154,9 +162,10 @@ exports.updateSessionStatus = async (req, res) => {
 exports.deleteSession = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     const result = await pool.query(
-      "DELETE FROM sessions WHERE id = $1 RETURNING id",
-      [id]
+      "DELETE FROM sessions WHERE id = $1 AND user_id = $2 RETURNING id",
+      [id, userId]
     );
 
     if (result.rows.length === 0)

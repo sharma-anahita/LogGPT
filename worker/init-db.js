@@ -24,12 +24,26 @@ const initDB = async () => {
     await pool.query("DROP TABLE IF EXISTS anomalies CASCADE;");
     await pool.query("DROP TABLE IF EXISTS logs CASCADE;");
     await pool.query("DROP TABLE IF EXISTS sessions CASCADE;");
+    await pool.query("DROP TABLE IF EXISTS users CASCADE;");
     console.log("[✓] Dropped existing tables");
 
-    // Sessions table
+    // Users table (NEW - for authentication)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("[✓] Table 'users' created");
+
+    // Sessions table (MODIFIED - added user_id)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sessions (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         status VARCHAR(50) DEFAULT 'processing',
         config JSONB,
@@ -39,11 +53,12 @@ const initDB = async () => {
     `);
     console.log("[✓] Table 'sessions' created");
 
-    // Logs table with session association
+    // Logs table (MODIFIED - added user_id for query efficiency)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS logs (
         id SERIAL PRIMARY KEY,
-        session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
         timestamp TIMESTAMP NOT NULL,
         level VARCHAR(50),
         service VARCHAR(255),
@@ -52,11 +67,13 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    console.log("[✓] Table 'logs' created");
 
-    // Anomalies table
+    // Anomalies table (MODIFIED - added user_id)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS anomalies (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
         type VARCHAR(100),
         severity VARCHAR(50),
@@ -67,8 +84,21 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    console.log("[✓] Table 'anomalies' created");
 
     // Create indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_logs_user_id ON logs (user_id);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_logs_session_id ON logs (session_id);
+    `);
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs (timestamp);
     `);
@@ -76,7 +106,7 @@ const initDB = async () => {
       CREATE INDEX IF NOT EXISTS idx_logs_service ON logs (service);
     `);
     await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_logs_session_id ON logs (session_id);
+      CREATE INDEX IF NOT EXISTS idx_anomalies_user_id ON anomalies (user_id);
     `);
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_anomalies_session_id ON anomalies (session_id);

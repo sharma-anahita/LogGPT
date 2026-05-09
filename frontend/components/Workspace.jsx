@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Sidebar } from '@/components/workspace/Sidebar'
 import { MainContent } from '@/components/workspace/MainContent'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
-import { getSessions } from '@/services/api'
+import { getSessions, createSession } from '@/services/api'
 
 export default function Workspace() {
   const [sessions, setSessions] = useState([])
@@ -52,6 +52,17 @@ export default function Workspace() {
           sessions={sessions}
           activeSessionId={activeSessionId}
           onSelectSession={setActiveSessionId}
+          onCreateSession={async (name) => {
+            try {
+              const created = await createSession(name)
+              // Refresh and select new session
+              refreshSessions(created.id)
+            } catch (err) {
+              console.error('Failed to create session:', err)
+              // still refresh to ensure UI updated
+              refreshSessions()
+            }
+          }}
           loading={loading}
           error={error}
         />

@@ -1,14 +1,19 @@
 const express = require("express");
 require("dotenv").config();
+const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
 const pool = require("../config/database");
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.LLM_MODEL || "llama3-8b-8192";
 
+// All summary routes require authentication
+router.use(authMiddleware);
+
 router.post("/:id/summary", async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
 
     // Fetch session
     const sessionResult = await pool.query(
@@ -18,9 +23,9 @@ router.post("/:id/summary", async (req, res) => {
        FROM sessions s
        LEFT JOIN logs l ON s.id = l.session_id
        LEFT JOIN anomalies a ON s.id = a.session_id
-       WHERE s.id = $1
+       WHERE s.id = $1 AND s.user_id = $2
        GROUP BY s.id, s.name, s.status`,
-      [id]
+      [id, userId]
     );
 
     if (sessionResult.rows.length === 0)
@@ -32,10 +37,10 @@ router.post("/:id/summary", async (req, res) => {
     const logsResult = await pool.query(
       `SELECT level, service, message
        FROM logs
-       WHERE session_id = $1
+       WHERE session_id = $1 AND user_id = $2
        ORDER BY timestamp DESC
        LIMIT 60`,
-      [id]
+      [id, userId]
     );
 
     // Fetch anomalies
@@ -43,9 +48,9 @@ router.post("/:id/summary", async (req, res) => {
       `SELECT type, severity, description,
               COALESCE((metadata->>'confidence')::float, 0.75) AS confidence
        FROM anomalies
-       WHERE session_id = $1
+       WHERE session_id = $1 AND user_id = $2
        ORDER BY start_time DESC`,
-      [id]
+      [id, userId]
     );
 
     const logs = logsResult.rows;

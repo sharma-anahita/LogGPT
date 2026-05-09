@@ -21,12 +21,13 @@ pool.on("error", (err) => {
 const saveLog = async (log) => {
   try {
     const query = `
-      INSERT INTO logs (session_id, timestamp, level, service, message, raw)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO logs (user_id, session_id, timestamp, level, service, message, raw)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
     `;
 
     const values = [
+      log.userId || null,
       log.sessionId || null,
       log.timestamp,
       log.level,
@@ -45,15 +46,16 @@ const saveLog = async (log) => {
 };
 
 // Save anomaly
-const saveAnomaly = async (sessionId, anomaly) => {
+const saveAnomaly = async (sessionId, anomaly, userId) => {
   try {
     const query = `
-      INSERT INTO anomalies (session_id, type, severity, start_time, end_time, description, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO anomalies (user_id, session_id, type, severity, start_time, end_time, description, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
     `;
 
     const values = [
+      userId || null,
       sessionId,
       anomaly.type,
       anomaly.severity,
