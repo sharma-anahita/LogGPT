@@ -1,6 +1,6 @@
-# Using Bitnami Kafka which supports KRaft mode (no Zookeeper needed)
+# Using Apache Kafka which supports KRaft mode (no Zookeeper needed)
 # KRaft mode is far simpler and more reliable on Render free tier
-FROM bitnami/kafka:3.7
+FROM apache/kafka:3.9.2
 
 # All configuration is done via environment variables at runtime
 # See the Render service env vars for KAFKA_* settings

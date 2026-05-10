@@ -10,9 +10,15 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS — must come before any routes
+const defaultOrigins = [
+  "http://localhost:3000",
+  "https://log-gpt-delta.vercel.app",
+  "https://log-gpt-git-main-sharma-anahitas-projects.vercel.app"
+];
+
 const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-  : ["http://localhost:3000"];
+  ? [...new Set(process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean))]
+  : defaultOrigins;
 
 app.use(
   cors({
