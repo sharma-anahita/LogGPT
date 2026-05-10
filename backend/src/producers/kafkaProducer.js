@@ -1,25 +1,52 @@
-// backend/src/producers/kafkaProducer.js
 require("dotenv").config();
 const { Kafka } = require("kafkajs");
+
+// KAFKA_BROKER is the single source of truth across all services
+// On Render internal network: e.g. kafka-service:9092
+const brokerUrl = process.env.KAFKA_BROKER;
+if (!brokerUrl) {
+  throw new Error("KAFKA_BROKER environment variable is required");
+}
+
 const kafka = new Kafka({
   clientId: "loggpt-backend",
-  brokers: [(process.env.KAFKA_BROKER || "localhost:9092")], // change when using docker
+  brokers: [brokerUrl],
+  retry: {
+    initialRetryTime: 300,
+    retries: 10,
+  },
+  connectionTimeout: 10000,
+  requestTimeout: 30000,
 });
 
-const producer = kafka.producer();
+const producer = kafka.producer({
+  allowAutoTopicCreation: true,
+});
 
 let isConnected = false;
+let connectPromise = null;
 
-// Connect producer (only once)
 const connectProducer = async () => {
-  if (!isConnected) {
-    await producer.connect();
-    isConnected = true;
-    console.log("Kafka Producer Connected");
-  }
+  if (isConnected) return;
+  // Prevent concurrent connection attempts
+  if (connectPromise) return connectPromise;
+
+  connectPromise = producer
+    .connect()
+    .then(() => {
+      isConnected = true;
+      connectPromise = null;
+      console.log("[✓] Kafka Producer connected to", brokerUrl);
+    })
+    .catch((err) => {
+      connectPromise = null;
+      isConnected = false;
+      throw err;
+    });
+
+  return connectPromise;
 };
 
-// Send logs to Kafka
 const sendLogsToKafka = async (logs) => {
   try {
     await connectProducer();
@@ -35,10 +62,18 @@ const sendLogsToKafka = async (logs) => {
 
     console.log(`[Kafka] Sent ${logs.length} logs to topic 'logs-topic'`);
   } catch (error) {
-    console.error("Kafka Producer Error:", error);
+    console.error("[Kafka] Producer Error:", error.message);
+    // Reset connection state so next call retries
+    isConnected = false;
+    throw error;
   }
 };
 
-module.exports = {
-  sendLogsToKafka,
-}; 
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  if (isConnected) {
+    await producer.disconnect();
+  }
+});
+
+module.exports = { sendLogsToKafka };

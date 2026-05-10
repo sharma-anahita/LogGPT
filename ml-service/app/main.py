@@ -5,7 +5,7 @@ from app.kafka_consumer import start_consumer_thread
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    start_consumer_thread()   # starts consumer in background on boot
+    start_consumer_thread()
     yield
 
 

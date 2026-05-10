@@ -1,20 +1,34 @@
-require("dotenv").config(require("path").resolve(__dirname, "../../.env"));
+require("dotenv").config();
 const { Pool } = require("pg");
 
-const pool = new Pool({
-  user: process.env.POSTGRES_USER || "postgres",
-  host: process.env.POSTGRES_HOST || "localhost",
-  database: process.env.POSTGRES_DB || "loggpt",
-  password: process.env.POSTGRES_PASSWORD || "hi123",
-  port: process.env.POSTGRES_PORT || 5432,
-});
+// In production (Neon/Supabase) prefer DATABASE_URL (connection string)
+// Fall back to individual vars for local dev
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }, // required for Neon/Supabase
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    })
+  : new Pool({
+      user: process.env.POSTGRES_USER,
+      host: process.env.POSTGRES_HOST,
+      database: process.env.POSTGRES_DB,
+      password: process.env.POSTGRES_PASSWORD,
+      port: parseInt(process.env.POSTGRES_PORT || "5432"),
+      ssl: process.env.POSTGRES_SSL === "true" ? { rejectUnauthorized: false } : false,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
 
 pool.on("connect", () => {
-  console.log("[✓] Backend database connection established");
+  console.log("[✓] Database connection established");
 });
 
 pool.on("error", (err) => {
-  console.error("[ERROR] Backend database connection error:", err.message);
+  console.error("[ERROR] Unexpected DB client error:", err.message);
 });
 
 module.exports = pool;
