@@ -6,7 +6,9 @@ FROM apache/kafka:3.9.2
 # See the Render service env vars for KAFKA_* settings
 
 USER root
-RUN mkdir -p /bitnami/kafka/data && chmod -R 777 /bitnami/kafka/data
+RUN mkdir -p /opt/kafka/config /opt/kafka/data \
+	&& chown -R 1001:0 /opt/kafka/config /opt/kafka/data \
+	&& chmod -R g+rwX /opt/kafka/config /opt/kafka/data
 USER 1001
 
 EXPOSE 9092
