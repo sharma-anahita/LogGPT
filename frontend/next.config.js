@@ -6,8 +6,7 @@ const nextConfig = {
     optimizePackageImports: ["framer-motion"],
   },
   rewrites: async () => {
-    // NEXT_PUBLIC_BACKEND_URL is set in Vercel env vars
-    // e.g. https://loggpt-backend.onrender.com
+    // NEXT_PUBLIC_BACKEND_URL is set in Vercel env vars 
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
     return {

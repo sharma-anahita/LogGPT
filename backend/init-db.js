@@ -1,4 +1,6 @@
-require("dotenv").config({ path: "../.env" });
+// Run this ONCE to set up your Neon/Supabase database schema.
+// Usage: DATABASE_URL="your-connection-string" node init-db.js
+require("dotenv").config();
 const { Pool } = require("pg");
 
 if (!process.env.DATABASE_URL && !process.env.POSTGRES_HOST) {
@@ -69,7 +71,6 @@ const initDB = async () => {
     `);
     console.log("[✓] Table 'logs' created");
 
-    // user_id is NULLABLE here — ML service detects anomalies without a user context
     await pool.query(`
       CREATE TABLE IF NOT EXISTS anomalies (
         id SERIAL PRIMARY KEY,
@@ -84,9 +85,8 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("[✓] Table 'anomalies' created (user_id nullable)");
+    console.log("[✓] Table 'anomalies' created");
 
-    // Indexes
     const indexes = [
       "CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);",
       "CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);",
@@ -95,11 +95,10 @@ const initDB = async () => {
       "CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs (timestamp);",
       "CREATE INDEX IF NOT EXISTS idx_anomalies_session_id ON anomalies (session_id);",
     ];
-    for (const idx of indexes) {
-      await pool.query(idx);
-    }
+    for (const idx of indexes) await pool.query(idx);
     console.log("[✓] Indexes created");
-    console.log("[✓] Database initialized successfully!");
+
+    console.log("\n[✓] Database initialized successfully!");
     await pool.end();
   } catch (error) {
     console.error("[ERROR] Database initialization failed:", error.message);

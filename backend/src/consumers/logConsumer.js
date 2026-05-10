@@ -1,6 +1,6 @@
 require("dotenv").config();
 const { Kafka } = require("kafkajs");
-const { saveLog } = require("../services/dbService.js");
+const pool = require("../config/database"); // reuse backend's existing DB pool
 
 const brokerUrl = process.env.KAFKA_BROKER;
 if (!brokerUrl) {
@@ -24,9 +24,28 @@ const consumer = kafka.consumer({
   heartbeatInterval: 3000,
 });
 
+const saveLog = async (log) => {
+  const query = `
+    INSERT INTO logs (user_id, session_id, timestamp, level, service, message, raw)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id
+  `;
+  const values = [
+    log.userId || null,
+    log.sessionId || null,
+    log.timestamp || new Date().toISOString(),
+    log.level || "info",
+    log.service || "unknown",
+    log.message || "",
+    log.raw || "",
+  ];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
 const startConsumer = async () => {
   let retries = 0;
-  const maxRetries = 10;
+  const maxRetries = 15;
 
   while (retries < maxRetries) {
     try {
@@ -40,44 +59,33 @@ const startConsumer = async () => {
         eachMessage: async ({ topic, partition, message }) => {
           try {
             const log = JSON.parse(message.value.toString());
-            const sessionLabel = log.sessionId ? `session ${log.sessionId}` : "no session";
-            console.log(`[KAFKA] Message from ${sessionLabel}: ${log.message?.slice(0, 80)}`);
-
+            const label = log.sessionId ? `session ${log.sessionId}` : "no session";
+            console.log(`[KAFKA] Message from ${label}: ${String(log.message).slice(0, 80)}`);
             await saveLog(log);
             console.log("[DB] Log saved");
-          } catch (error) {
-            console.error("[ERROR] Processing message:", error.message);
-            // Don't rethrow — bad messages should not crash the consumer
+          } catch (err) {
+            // Bad messages must not crash the consumer
+            console.error("[ERROR] Processing message:", err.message);
           }
         },
       });
 
-      return; // success
-    } catch (error) {
+      return; // connected and running — exit the retry loop
+    } catch (err) {
       retries++;
       const waitMs = Math.min(1000 * retries, 15000);
       console.error(
-        `[ERROR] Kafka Consumer connection failed (attempt ${retries}/${maxRetries}):`,
-        error.message
+        `[WARN] Kafka Consumer failed to connect (attempt ${retries}/${maxRetries}):`,
+        err.message
       );
       if (retries >= maxRetries) {
-        console.error("[FATAL] Max retries reached. Exiting.");
-        process.exit(1);
+        console.error("[ERROR] Could not connect to Kafka after max retries. Consumer disabled.");
+        return; // don't crash the whole backend — just disable the consumer
       }
-      console.log(`[INFO] Retrying in ${waitMs}ms...`);
+      console.log(`[INFO] Retrying consumer in ${waitMs}ms...`);
       await new Promise((r) => setTimeout(r, waitMs));
     }
   }
 };
-
-// Graceful shutdown
-const shutdown = async () => {
-  console.log("[INFO] Shutting down worker consumer...");
-  await consumer.disconnect();
-  process.exit(0);
-};
-
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
 
 module.exports = { startConsumer };

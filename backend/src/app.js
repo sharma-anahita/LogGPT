@@ -5,7 +5,7 @@ const logRoutes = require("./routes/logRoutes");
 const sessionRoutes = require("./routes/sessionRoutes");
 const authRoutes = require("./routes/authRoutes");
 const summaryRoutes = require("./routes/summaryRoutes");
-
+const { startConsumer } = require("./consumers/logConsumer");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -23,6 +23,7 @@ const allowedOrigins = [
     : []),
 ];
 
+ 
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -36,21 +37,26 @@ app.use(
     credentials: true,
   })
 );
-
 app.use(express.json({ limit: "10mb" }));
-
+ 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", port: PORT });
 });
-
+ 
 // Public routes
 app.use("/auth", authRoutes);
-
+ 
 // Protected routes
 app.use("/logs", logRoutes);
 app.use("/sessions", sessionRoutes);
 app.use("/sessions", summaryRoutes);
-
+ 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`[✓] Backend running on port ${PORT}`);
+ 
+  // Start Kafka consumer in background — runs inside the same process as Express.
+  // If Kafka isn't ready yet it retries with backoff and won't crash the server.
+  startConsumer().catch((err) => {
+    console.error("[ERROR] Kafka consumer startup error:", err.message);
+  });
 });
