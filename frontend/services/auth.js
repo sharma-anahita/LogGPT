@@ -4,7 +4,7 @@ import axios from "axios";
 // e.g. https://loggpt-backend.onrender.com/api
 // Locally: falls back to localhost:5000
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
 export async function registerUser(email, password) {
   const response = await axios.post(`${API_BASE_URL}/auth/register`, {
