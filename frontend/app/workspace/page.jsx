@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { isAuthenticated, removeToken, getToken } from '@/services/auth'
+import { useDialog } from '@/components/dialogs/DialogProvider'
 import Workspace from '@/components/Workspace'
 
 export default function WorkspacePage() {
   const [isAuth, setIsAuth] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const dialog = useDialog()
 
   useEffect(() => {
     // Check if user is authenticated
@@ -22,8 +24,29 @@ export default function WorkspacePage() {
   }, [router])
 
   const handleLogout = () => {
-    removeToken()
-    router.push('/login')
+    // Ask the user to confirm logout first
+    dialog
+      .confirm({
+        title: 'Sign out',
+        message: 'Are you sure you want to sign out? You will need to log in again to access your sessions.',
+        confirmText: 'Sign out',
+        cancelText: 'Cancel',
+        tone: 'warning',
+      })
+      .then((result) => {
+        if (!result.confirmed) return
+
+        // Clear auth token and show a brief signed-out notice
+        removeToken()
+        dialog
+          .alert({
+            title: 'Signed out',
+            message: 'You have been signed out.',
+            confirmText: 'OK',
+            tone: 'info',
+          })
+          .then(() => router.push('/login'))
+      })
   }
 
   if (loading) {
