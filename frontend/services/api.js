@@ -1,9 +1,12 @@
 import axios from 'axios'
 import { getToken } from './auth'
 
+const DEFAULT_API_TIMEOUT_MS = 30000
+const UPLOAD_TIMEOUT_MS = 120000
+
 const api = axios.create({
   baseURL: '/api',
-  timeout: 10000,
+  timeout: DEFAULT_API_TIMEOUT_MS,
 })
 
 // Add JWT token to all requests
@@ -55,6 +58,7 @@ export async function uploadLogs({ sessionName, file, text, onUploadProgress }) 
     {
       headers: { 'Content-Type': 'application/json' },
       onUploadProgress,
+      timeout: UPLOAD_TIMEOUT_MS,
     }
   )
   return res.data
