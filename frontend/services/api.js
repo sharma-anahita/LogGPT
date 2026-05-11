@@ -40,6 +40,11 @@ export async function createSession(name, config = null) {
   return res.data
 }
 
+export async function deleteSession(sessionId) {
+  const res = await api.delete(`/sessions/${sessionId}`)
+  return res.data
+}
+
 export async function uploadLogs({ sessionId, sessionName, file, text, onUploadProgress }) {
   // Backend expects JSON with a logs array, not multipart/form-data
   // Parse the file or text into a logs array first

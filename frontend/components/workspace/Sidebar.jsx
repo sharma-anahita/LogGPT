@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { isAuthenticated } from '@/services/auth'
 
-export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, error, onCreateSession }) {
+export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, error, onCreateSession, onDeleteSession }) {
   const handleCreate = async () => {
     const name = window.prompt('Create session - enter a name for this session:')
     if (!name) return
@@ -67,31 +67,49 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, e
           </div>
         )}
         {!loading && !error && sessions.map((session, index) => (
-          <motion.button
+          <motion.div
             key={session.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.07 * index }}
             whileHover={{ x: 6, boxShadow: '0 0 16px 2px rgba(0,240,255,0.10)' }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onSelectSession(session.id)}
             className={`w-full text-left px-5 py-4 rounded-xl transition-smooth duration-300 select-none group focus:outline-none focus:ring-2 focus:ring-cyan-400/40 ${
               activeSessionId === session.id
                 ? 'glass border border-cyan-400/60 bg-cyan-400/10 glow-cyan-lg shadow-lg'
                 : 'hover:bg-white/5 border border-white/10'
             }`}
             style={{ minHeight: 72 }}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelectSession(session.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectSession(session.id) }}
           >
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-bold text-base tracking-tight line-clamp-1 text-white group-hover:text-cyan-300 transition-colors">
                 {session.name}
               </h3>
-              {activeSessionId === session.id && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-cyan-400/40 shadow-md"
-                />
-              )}
+              <div className="flex items-center gap-2">
+                {activeSessionId === session.id && (
+                  <motion.div
+                    layoutId="activeIndicator"
+                    className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-cyan-400/40 shadow-md"
+                  />
+                )}
+                {/* Delete button */}
+                {typeof window !== 'undefined' && isAuthenticated() && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (!confirm(`Delete session "${session.name}"? This cannot be undone.`)) return
+                      if (typeof onDeleteSession === 'function') onDeleteSession(session.id)
+                    }}
+                    className="text-white/40 hover:text-red-400 text-sm px-2 py-1 rounded"
+                    aria-label={`Delete session ${session.name}`}
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
             </div>
 
             <p className="text-xs text-white/50 flex items-center gap-2">
@@ -113,7 +131,7 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, e
                 </span>
               )}
             </div>
-          </motion.button>
+          </motion.div>
         ))}
       </div>
 

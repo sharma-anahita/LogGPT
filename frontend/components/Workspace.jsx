@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Sidebar } from '@/components/workspace/Sidebar'
 import { MainContent } from '@/components/workspace/MainContent'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
-import { getSessions, createSession } from '@/services/api'
+import { getSessions, createSession, deleteSession } from '@/services/api'
 
 export default function Workspace() {
   const [sessions, setSessions] = useState([])
@@ -61,6 +61,17 @@ export default function Workspace() {
               console.error('Failed to create session:', err)
               // still refresh to ensure UI updated
               refreshSessions()
+            }
+          }}
+          onDeleteSession={async (id) => {
+            try {
+              await deleteSession(id)
+              // Refresh sessions and ensure active selection updates
+              await refreshSessions()
+            } catch (err) {
+              console.error('Failed to delete session:', err)
+              // still refresh to keep UI in sync
+              await refreshSessions()
             }
           }}
           loading={loading}
