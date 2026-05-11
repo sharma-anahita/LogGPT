@@ -7,10 +7,9 @@ const nextConfig = {
   },
   rewrites: async () => {
     // Support both deployment env names so uploads keep working in production.
-    const backendUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      "http://localhost:5000";
+    const backendUrl = [process.env.NEXT_PUBLIC_BACKEND_URL, process.env.NEXT_PUBLIC_API_URL, "http://localhost:5000"]
+      .map((value) => (typeof value === "string" ? value.trim().replace(/\/+$/, "") : value))
+      .find(Boolean);
 
     return {
       beforeFiles: [
