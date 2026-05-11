@@ -6,8 +6,11 @@ const nextConfig = {
     optimizePackageImports: ["framer-motion"],
   },
   rewrites: async () => {
-    // NEXT_PUBLIC_BACKEND_URL is set in Vercel env vars 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    // Support both deployment env names so uploads keep working in production.
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:5000";
 
     return {
       beforeFiles: [

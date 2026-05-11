@@ -62,7 +62,10 @@ export function UploadForm({ onUploadSuccess }) {
         onUploadSuccess(res.sessionId)
       }
     } catch (err) {
-      setFeedback({ type: 'error', message: 'Upload failed. Please try again.' })
+      setFeedback({
+        type: 'error',
+        message: err.response?.data?.error || err.message || 'Upload failed. Please try again.',
+      })
     }
     setIsLoading(false)
   }
