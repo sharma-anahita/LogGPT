@@ -5,7 +5,7 @@ import { uploadLogs } from '@/services/api'
 import { motion } from 'framer-motion'
 
 
-export function UploadForm({ onUploadSuccess }) {
+export function UploadForm({ session, onUploadSuccess }) {
   const [isDragging, setIsDragging] = useState(false)
   const [sessionName, setSessionName] = useState('')
   const [file, setFile] = useState(null)
@@ -14,6 +14,9 @@ export function UploadForm({ onUploadSuccess }) {
   const [progress, setProgress] = useState(0)
   const [feedback, setFeedback] = useState(null)
   const fileInputRef = useRef(null)
+
+  const selectedSessionId = session?.id || null
+  const uploadSessionName = selectedSessionId ? session?.name || sessionName : sessionName
 
   const handleDragOver = (e) => {
     e.preventDefault()
@@ -45,16 +48,22 @@ export function UploadForm({ onUploadSuccess }) {
   }
 
   const handleUpload = async () => {
-    if (!sessionName || (!file && !text)) return
+    if ((!selectedSessionId && !sessionName) || (!file && !text)) return
     setIsLoading(true)
     setProgress(0)
     setFeedback(null)
     try {
-      const res = await uploadLogs({ sessionName, file, text, onUploadProgress: (e) => {
-        if (e.total) setProgress(Math.round((e.loaded / e.total) * 100))
-      } })
+      const res = await uploadLogs({
+        sessionId: selectedSessionId,
+        sessionName: selectedSessionId ? null : sessionName,
+        file,
+        text,
+        onUploadProgress: (e) => {
+          if (e.total) setProgress(Math.round((e.loaded / e.total) * 100))
+        },
+      })
       setFeedback({ type: 'success', message: 'Upload successful!' })
-      setSessionName('')
+      if (!selectedSessionId) setSessionName('')
       setFile(null)
       setText('')
       setProgress(0)
@@ -76,16 +85,23 @@ export function UploadForm({ onUploadSuccess }) {
       <div className="space-y-6">
         {/* Session name input */}
         <div>
-          <label className="text-sm text-white/70 block mb-2 font-semibold tracking-wide">Session Name</label>
+          <label className="text-sm text-white/70 block mb-2 font-semibold tracking-wide">
+            {selectedSessionId ? 'Session' : 'Session Name'}
+          </label>
           <motion.input
             whileFocus={{ scale: 1.03, boxShadow: '0 0 0 2px rgba(0,240,255,0.15)' }}
             type="text"
-            placeholder="e.g., Payment Service Incident"
-            value={sessionName}
+            placeholder={selectedSessionId ? 'Uploads will attach to the selected session' : 'e.g., Payment Service Incident'}
+            value={uploadSessionName}
             onChange={(e) => setSessionName(e.target.value)}
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all font-mono text-base"
-            disabled={isLoading}
+            disabled={isLoading || !!selectedSessionId}
           />
+          {selectedSessionId && (
+            <p className="mt-2 text-xs text-cyan-300/80">
+              Uploading into selected session: {session?.name}
+            </p>
+          )}
         </div>
 
         {/* Drag and drop/file input area */}
@@ -142,12 +158,12 @@ export function UploadForm({ onUploadSuccess }) {
 
         {/* Upload button */}
         <motion.button
-          whileHover={{ scale: sessionName && (file || text) && !isLoading ? 1.04 : 1, y: -2, boxShadow: sessionName && (file || text) && !isLoading ? '0 0 24px 4px rgba(0,240,255,0.18)' : undefined }}
+          whileHover={{ scale: (selectedSessionId || sessionName) && (file || text) && !isLoading ? 1.04 : 1, y: -2, boxShadow: (selectedSessionId || sessionName) && (file || text) && !isLoading ? '0 0 24px 4px rgba(0,240,255,0.18)' : undefined }}
           whileTap={{ scale: 0.97 }}
           onClick={handleUpload}
-          disabled={!sessionName || (!file && !text) || isLoading}
+          disabled={(!selectedSessionId && !sessionName) || (!file && !text) || isLoading}
           className={`w-full px-7 py-3 rounded-xl font-bold text-base transition-smooth tracking-wide select-none ${
-            sessionName && (file || text) && !isLoading
+            (selectedSessionId || sessionName) && (file || text) && !isLoading
               ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-black hover:shadow-lg hover:shadow-cyan-500/50 glow-cyan'
               : 'bg-white/10 text-white/50 cursor-not-allowed'
           }`}

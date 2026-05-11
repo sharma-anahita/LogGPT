@@ -40,7 +40,7 @@ export async function createSession(name, config = null) {
   return res.data
 }
 
-export async function uploadLogs({ sessionName, file, text, onUploadProgress }) {
+export async function uploadLogs({ sessionId, sessionName, file, text, onUploadProgress }) {
   // Backend expects JSON with a logs array, not multipart/form-data
   // Parse the file or text into a logs array first
   let logs = []
@@ -54,7 +54,7 @@ export async function uploadLogs({ sessionName, file, text, onUploadProgress }) 
 
   const res = await api.post(
     '/logs/upload',
-    { sessionName, logs, service: 'uploaded' },
+    { sessionId, sessionName, logs, service: 'uploaded' },
     {
       headers: { 'Content-Type': 'application/json' },
       onUploadProgress,
