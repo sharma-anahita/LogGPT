@@ -3,11 +3,27 @@
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { isAuthenticated } from '@/services/auth'
+import { useDialog } from '@/components/dialogs/DialogProvider'
 
 export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, error, onCreateSession, onDeleteSession }) {
+  const dialog = useDialog()
+
   const handleCreate = async () => {
-    const name = window.prompt('Create session - enter a name for this session:')
-    if (!name) return
+    const result = await dialog.prompt({
+      title: 'Create Session',
+      message: 'Enter a name for this session.',
+      confirmText: 'Create Session',
+      cancelText: 'Cancel',
+      tone: 'info',
+      input: {
+        label: 'Session name',
+        placeholder: 'New session name',
+        autoFocus: true,
+      },
+    })
+
+    const name = result.value?.trim()
+    if (!result.confirmed || !name) return
     if (onCreateSession) {
       await onCreateSession(name)
     }
@@ -100,8 +116,16 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, loading, e
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (!confirm(`Delete session "${session.name}"? This cannot be undone.`)) return
-                      if (typeof onDeleteSession === 'function') onDeleteSession(session.id)
+                      dialog.confirm({
+                        title: 'Delete Session',
+                        message: `Delete \"${session.name}\"? This cannot be undone and will remove the session data from the database.`,
+                        confirmText: 'Delete Session',
+                        cancelText: 'Cancel',
+                        tone: 'danger',
+                      }).then((result) => {
+                        if (!result.confirmed) return
+                        if (typeof onDeleteSession === 'function') onDeleteSession(session.id)
+                      })
                     }}
                     className="text-white/40 hover:text-red-400 text-sm px-2 py-1 rounded"
                     aria-label={`Delete session ${session.name}`}

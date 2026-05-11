@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { loginUser, saveToken } from '@/services/auth'
 import { googleSignIn } from '@/services/auth'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
+import { useDialog } from '@/components/dialogs/DialogProvider'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const dialog = useDialog()
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
   const handleSubmit = async (e) => {
@@ -168,7 +170,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-slate-400">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
               Register here
             </Link>
@@ -180,10 +182,17 @@ export default function LoginPage() {
               <button
                 onClick={() => {
                   // Quick guidance when client id is missing
-                  const msg = `Google Client ID is not configured.\n\nAdd NEXT_PUBLIC_GOOGLE_CLIENT_ID to frontend/.env.local and restart Next.js.\n\nOpen Google Cloud Console?`;
-                  if (window.confirm(msg)) {
-                    window.open('https://console.cloud.google.com/apis/credentials', '_blank')
-                  }
+                  dialog.confirm({
+                    title: 'Google Sign-In Not Configured',
+                    message: 'Google Client ID is not configured.\n\nAdd NEXT_PUBLIC_GOOGLE_CLIENT_ID to frontend/.env.local and restart Next.js.\n\nOpen Google Cloud Console?',
+                    confirmText: 'Open Console',
+                    cancelText: 'Cancel',
+                    tone: 'warning',
+                  }).then((result) => {
+                    if (result.confirmed) {
+                      window.open('https://console.cloud.google.com/apis/credentials', '_blank')
+                    }
+                  })
                 }}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-md border border-white/10"
               >

@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import './globals.css'
+import { Providers } from './providers'
 
 export const metadata = {
   title: 'LogGPT - AI Observability',
@@ -21,7 +22,7 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
       </head>
       <body className="bg-black text-white antialiased">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
