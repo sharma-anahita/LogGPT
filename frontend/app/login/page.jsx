@@ -5,7 +5,6 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { loginUser, saveToken } from '@/services/auth'
-import { googleSignIn } from '@/services/auth'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
 import { useDialog } from '@/components/dialogs/DialogProvider'
 
@@ -16,8 +15,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const dialog = useDialog()
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -33,88 +30,6 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    // Load Google Identity Services button
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    if (!clientId) return
- 
-    const existing = document.getElementById('google-client-script')
-    if (!existing) {
-      const script = document.createElement('script')
-      script.src = 'https://accounts.google.com/gsi/client'
-      script.id = 'google-client-script'
-      script.async = true
-      script.defer = true
-      script.onerror = (e) => console.error('[GSI] script load error', e)
-      script.onload = () => { 
-        if (window.google) {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: async (resp) => {
-              try {
-                const data = await googleSignIn(resp.credential)
-                saveToken(data.token)
-                router.push('/workspace')
-              } catch (err) {
-                console.error('Google sign-in failed', err)
-                setError(err.response?.data?.error || 'Google sign-in failed')
-              }
-            },
-          })
-
-          window.google.accounts.id.renderButton(
-            document.getElementById('googleSignInButton'),
-            { theme: 'outline', size: 'large' }
-          )
-        }
-      }
-      document.body.appendChild(script)
-    }
-
-    // If script already present (client-side navigation), try to initialize/render now
-    if (existing) {
-      try {
-        if (window.google && !window.google.accounts) {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: async (resp) => {
-              try {
-                const data = await googleSignIn(resp.credential)
-                saveToken(data.token)
-                router.push('/workspace')
-              } catch (err) {
-                console.error('Google sign-in failed', err)
-                setError(err.response?.data?.error || 'Google sign-in failed')
-              }
-            },
-          })
-
-          window.google.accounts.id.renderButton(
-            document.getElementById('googleSignInButton'),
-            { theme: 'outline', size: 'large' }
-          )
-          console.log('[GSI] initialized after existing script')
-        } else if (window.google && window.google.accounts) {
-          // Already initialized — attempt to render the button
-          try {
-            window.google.accounts.id.renderButton(document.getElementById('googleSignInButton'), { theme: 'outline', size: 'large' })
-            console.log('[GSI] rendered existing accounts button')
-          } catch (e) {
-            console.warn('[GSI] render attempt failed', e)
-          }
-        }
-      } catch (e) {
-        console.error('[GSI] existing script init error', e)
-      }
-    }
-
-    
-    return () => {
-      // nothing to cleanup for now
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <AnimatedBackground />
@@ -175,31 +90,6 @@ export default function LoginPage() {
               Register here
             </Link>
           </p>
-          <div className="mt-4 flex justify-center">
-            {clientId ? (
-              <div id="googleSignInButton" />
-            ) : (
-              <button
-                onClick={() => {
-                  // Quick guidance when client id is missing
-                  dialog.confirm({
-                    title: 'Google Sign-In Not Configured',
-                    message: 'Google Client ID is not configured.\n\nAdd NEXT_PUBLIC_GOOGLE_CLIENT_ID to frontend/.env.local and restart Next.js.\n\nOpen Google Cloud Console?',
-                    confirmText: 'Open Console',
-                    cancelText: 'Cancel',
-                    tone: 'warning',
-                  }).then((result) => {
-                    if (result.confirmed) {
-                      window.open('https://console.cloud.google.com/apis/credentials', '_blank')
-                    }
-                  })
-                }}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-md border border-white/10"
-              >
-                Sign in with Google (configure)
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>

@@ -22,13 +22,6 @@ export async function loginUser(email, password) {
   return response.data;
 }
 
-export async function googleSignIn(idToken) {
-  const response = await axios.post(`${API_BASE_URL}/auth/google`, {
-    id_token: idToken,
-  });
-  return response.data;
-}
-
 export function saveToken(token) {
   if (typeof window !== "undefined") {
     localStorage.setItem("authToken", token);

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { registerUser, saveToken } from '@/services/auth'
-import { googleSignIn } from '@/services/auth'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
 
 export default function RegisterPage() {
@@ -52,90 +51,6 @@ export default function RegisterPage() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    if (!clientId) return
-
-    console.log('[GSI] NEXT_PUBLIC_GOOGLE_CLIENT_ID:', clientId)
-    const existing = document.getElementById('google-client-script')
-    if (!existing) {
-      const script = document.createElement('script')
-      script.src = 'https://accounts.google.com/gsi/client'
-      script.id = 'google-client-script'
-      script.async = true
-      script.defer = true
-      script.onerror = (e) => console.error('[GSI] script load error', e)
-      script.onload = () => {
-        console.log('[GSI] script loaded, window.google present?', !!window.google)
-        if (window.google) {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: async (resp) => {
-              try {
-                const data = await googleSignIn(resp.credential)
-                saveToken(data.token)
-                router.push('/workspace')
-              } catch (err) {
-                console.error('Google sign-in failed', err)
-                setError(err.response?.data?.error || 'Google sign-in failed')
-              }
-            },
-          })
-
-          window.google.accounts.id.renderButton(
-            document.getElementById('googleSignInButton'),
-            { theme: 'outline', size: 'large' }
-          )
-        }
-      }
-      document.body.appendChild(script)
-    }
-
-    // If script already present (client-side navigation), try to initialize/render now
-    if (existing) {
-      try {
-        if (window.google && !window.google.accounts) {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: async (resp) => {
-              try {
-                const data = await googleSignIn(resp.credential)
-                saveToken(data.token)
-                router.push('/workspace')
-              } catch (err) {
-                console.error('Google sign-in failed', err)
-                setError(err.response?.data?.error || 'Google sign-in failed')
-              }
-            },
-          })
-
-          window.google.accounts.id.renderButton(
-            document.getElementById('googleSignInButton'),
-            { theme: 'outline', size: 'large' }
-          )
-          console.log('[GSI] initialized after existing script')
-        } else if (window.google && window.google.accounts) {
-          try {
-            window.google.accounts.id.renderButton(document.getElementById('googleSignInButton'), { theme: 'outline', size: 'large' })
-            console.log('[GSI] rendered existing accounts button')
-          } catch (e) {
-            console.warn('[GSI] render attempt failed', e)
-          }
-        }
-      } catch (e) {
-        console.error('[GSI] existing script init error', e)
-      }
-    }
-
-    // After short delay, log whether button container exists and google object
-    setTimeout(() => {
-      console.log('[GSI] googleSignInButton exists?', !!document.getElementById('googleSignInButton'))
-      console.log('[GSI] window.google.accounts?', !!(window.google && window.google.accounts))
-    }, 1200)
-
-    return () => {}
-  }, [])
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -213,9 +128,6 @@ export default function RegisterPage() {
               Login here
             </Link>
           </p>
-          <div className="mt-4 flex justify-center">
-            <div id="googleSignInButton" />
-          </div>
         </div>
       </div>
     </div>
