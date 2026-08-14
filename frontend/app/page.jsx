@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AnimatedBackground } from '@/components/AnimatedBackground'
 import { HeroSection } from '@/components/HeroSection'
 import { FeaturesSection } from '@/components/FeaturesSection'
-import { AIDemoSection } from '@/components/AIDemoSection'
 import { CTASection } from '@/components/CTASection'
 import Workspace from '@/components/Workspace'
 import { isAuthenticated } from '@/services/auth'
@@ -37,7 +36,6 @@ export default function Home() {
         <div className="relative z-10">
           <HeroSection onCtaClick={handleCtaClick} />
           <FeaturesSection />
-          <AIDemoSection />
           <CTASection onCtaClick={handleCtaClick} />
 
           {/* Footer */}

@@ -193,7 +193,6 @@ loggpt/
 │   │   ├── AnimatedBackground.jsx
 │   │   ├── HeroSection.jsx
 │   │   ├── FeaturesSection.jsx
-│   │   ├── AIDemoSection.jsx    # Live animated demo
 │   │   └── CTASection.jsx
 │   ├── services/
 │   │   ├── api.js               # Axios instance + API helpers
