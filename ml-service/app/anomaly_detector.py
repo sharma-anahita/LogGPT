@@ -3,7 +3,86 @@ from collections import deque, Counter
 from datetime import datetime, timedelta
 import re
 import requests
+# ml-service/app/anomaly_detector.py
+from collections import deque
+import torch
+import torch.nn.functional as F
+from app.models.deeplog import DeepLogLSTM
+from app.utils.log_parser import LogTemplateParser
 
+class DeepLogAnomalyDetector:
+    def __init__(self, model_path="d:/LogGPT/model/deeplog_model.pth", parser_state="d:/LogGPT/model/drain_state.bin", candidate_g=3):
+        # 1. Load the template miner/parser (in read-only inference mode)
+        self.parser = LogTemplateParser(persistence_path=parser_state)
+        
+        # 2. Load the trained PyTorch model
+        checkpoint = torch.load(model_path)
+        self.window_size = checkpoint.get('window_size', 10)
+        self.vocab_size = checkpoint.get('vocab_size')
+        
+        self.model = DeepLogLSTM(vocab_size=self.vocab_size)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.model.eval()
+        
+        # 3. Anomaly detection parameters
+        self.candidate_g = candidate_g  # The top-g predicted options
+        
+        # 4. Session memory (stores recent template IDs per session)
+        self.session_windows = {}
+        # Keep a buffer of raw logs for LLM summarization context
+        self.session_raw_buffers = {}
+        
+    def add_log(self, session_id, log) -> tuple[bool, list, str]:
+        """
+        Processes a single log from Kafka.
+        Returns:
+            (is_anomaly, list_of_recent_raw_logs, severity)
+        """
+        message = log.get('message', '')
+        level = log.get('level', '').upper()
+        
+        # Parse the message to its template ID (do not update trained template miner dynamically)
+        template_id = self.parser.parse_message(message, update_templates=False)
+        
+        # Guard: coerce new or out-of-vocabulary templates to 0 (unknown/padding index)
+        if template_id >= self.vocab_size:
+            template_id = 0
+            
+        # Initialize session state if missing
+        if session_id not in self.session_windows:
+            self.session_windows[session_id] = deque(maxlen=self.window_size)
+            self.session_raw_buffers[session_id] = deque(maxlen=50)
+            
+        self.session_raw_buffers[session_id].append(log)
+        window = self.session_windows[session_id]
+        
+        # Check if we have enough logs for a full window
+        if len(window) < self.window_size:
+            window.append(template_id)
+            return False, None, None
+            
+        # Run prediction: x is the last `window_size` template IDs
+        input_seq = torch.tensor([list(window)], dtype=torch.long)
+        
+        with torch.no_grad():
+            logits = self.model(input_seq)
+            probabilities = F.softmax(logits, dim=1)
+            # Find the top g candidates
+            top_prob, top_indices = torch.topk(probabilities, self.candidate_g, dim=1)
+            predicted_candidates = top_indices[0].tolist()
+            
+        # Push the current log to the window for future sequences
+        window.append(template_id)
+        
+        # Check if the actual log key is in the predicted candidates
+        is_anomaly = template_id not in predicted_candidates
+        
+        if is_anomaly:
+            # We can classify severity based on log level or target prediction rank
+            severity = "HIGH" if level == "ERROR" else "MEDIUM"
+            return True, list(self.session_raw_buffers[session_id]), severity
+            
+        return False, None, None
 class FrequencyAnomalyDetector:
     def __init__(self, window_seconds=60, error_threshold=50, buffer_size=200):
         self.window_seconds = window_seconds

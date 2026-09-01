@@ -30,7 +30,52 @@ POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "")
 POSTGRES_SSL = os.environ.get("POSTGRES_SSL", "false").lower() == "true"
 
+# In kafka_consumer.py
+from app.anomaly_detector import DeepLogAnomalyDetector
 
+def process_log_pipeline():
+    # Instantiate the DeepLog detector once at startup
+    deeplog_detector = DeepLogAnomalyDetector(
+        model_path="d:/LogGPT/model/deeplog_model.pth",
+        parser_state="d:/LogGPT/model/drain_state.bin",
+        candidate_g=3  # Flag as anomaly if not in top 3 predicted templates
+    )
+    
+    consumer = create_consumer_with_retry()
+    print("[✓] DeepLog anomaly detector initialized and listening on Kafka...")
+    
+    for message in consumer:
+        try:
+            log = message.value
+            session_id = log.get("sessionId")
+            
+            # Run DeepLog anomaly detection
+            anomaly, recent_logs, severity = deeplog_detector.add_log(session_id, log)
+            
+            if anomaly:
+                print(f"[DEEPLOG ALERT] Anomaly! Severity={severity} session={session_id}")
+                agg = summarize_logs(recent_logs)
+                
+                description = f"DeepLog sequential anomaly detected: {'; '.join(agg[:5])}"
+                confidence = 0.85
+                
+                if GROQ_API_KEY:
+                    try:
+                        llm_summary = generate_log_summary(agg, GROQ_API_KEY, model=LLM_MODEL)
+                        description = llm_summary
+                    except Exception as e:
+                        print(f"[WARN] LLM summary failed: {e}")
+                        
+                save_anomaly_to_db(
+                    session_id=session_id,
+                    anomaly_type="DeepLog Sequential Anomaly",
+                    severity=severity,
+                    description=description,
+                    confidence=confidence,
+                    start_time=datetime.now(timezone.utc),
+                )
+        except Exception as e:
+            print(f"[ERROR] Message processing failed: {e}")
 def get_db_conn():
     if DATABASE_URL:
         return psycopg2.connect(DATABASE_URL, sslmode="require")
@@ -119,55 +164,7 @@ def create_consumer_with_retry(max_retries=15):
     raise RuntimeError(f"Could not connect to Kafka at {KAFKA_BROKER} after {max_retries} attempts")
 
 
-def process_log_pipeline():
-    detectors = {}
-    consumer = create_consumer_with_retry()
-
-    print(f"[✓] Listening on topic '{KAFKA_TOPIC}'...")
-    for message in consumer:
-        try:
-            log = message.value
-            session_id = log.get("sessionId")
-
-            if session_id not in detectors:
-                detectors[session_id] = FrequencyAnomalyDetector(
-                    window_seconds=60, error_threshold=50, buffer_size=200
-                )
-
-            detector = detectors[session_id]
-            anomaly, recent_logs, severity = detector.add_log(log)
-
-            if anomaly:
-                print(f"[ALERT] Anomaly! Severity={severity} session={session_id}")
-                agg = summarize_logs(recent_logs)
-                for line in agg:
-                    print(" ", line)
-
-                description = f"Error spike detected. {'; '.join(agg[:5])}"
-                confidence = _severity_to_confidence(severity)
-
-                if GROQ_API_KEY:
-                    try:
-                        llm_summary = generate_log_summary(agg, GROQ_API_KEY, model=LLM_MODEL)
-                        print(f"[LLM Summary] {llm_summary[:120]}")
-                        description = llm_summary
-                    except Exception as e:
-                        print(f"[WARN] LLM summarization failed: {e}")
-
-                save_anomaly_to_db(
-                    session_id=session_id,
-                    anomaly_type="Error Spike",
-                    severity=severity,
-                    description=description,
-                    confidence=confidence,
-                    start_time=datetime.now(timezone.utc),
-                )
-        except Exception as e:
-            print(f"[ERROR] Message processing failed: {e}")
-
-
-def _severity_to_confidence(severity: str) -> float:
-    return {"HIGH": 0.95, "MEDIUM": 0.80, "LOW": 0.65}.get(severity.upper(), 0.70)
+# Using the DeepLog process_log_pipeline defined at the top.
 
 
 def start_consumer_thread():

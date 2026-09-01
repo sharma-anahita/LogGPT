@@ -1,6 +1,8 @@
 fastapi==0.115.12
 uvicorn[standard]==0.34.0
-kafka-python==2.0.2
+kafka-python-ng
 requests==2.32.3
 python-dotenv==1.0.1
-psycopg2-binary==2.9.9
+psycopg2-binary>=2.9.9
+torch>=2.2.0
+drain3>=0.9.11
